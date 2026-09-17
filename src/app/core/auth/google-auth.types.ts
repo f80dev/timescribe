@@ -31,6 +31,7 @@ export interface GapiClient {
   init(config: { discoveryDocs?: string[]; scope?: string }): Promise<void>;
   tasks: GapiTasksNamespace;
   drive?: GapiDriveNamespace;
+  calendar?: GapiCalendarNamespace;
 }
 
 export interface GapiTasksNamespace {
@@ -63,6 +64,23 @@ export interface GapiDriveFile {
   mimeType: string;
   size?: string;
   modifiedTime?: string;
+}
+
+export interface GapiCalendarNamespace {
+  events: {
+    list(params: Record<string, unknown>): Promise<{
+      result: { items?: GapiCalendarEvent[]; nextPageToken?: string };
+    }>;
+  };
+}
+
+export interface GapiCalendarEvent {
+  id: string;
+  summary?: string;
+  description?: string;
+  start?: { dateTime?: string; date?: string };
+  end?: { dateTime?: string; date?: string };
+  attendees?: Array<{ email?: string }>;
 }
 
 export interface Gapi {

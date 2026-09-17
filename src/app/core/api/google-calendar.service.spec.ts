@@ -68,7 +68,8 @@ describe('GoogleCalendarService', () => {
 
   it('listEvents() mappe les events vers CalendarEventCandidate avec dates en Date', async () => {
     const svc = TestBed.inject(GoogleCalendarService);
-    const events = await svc.listEvents(new Date(), new Date());
+    const page = await svc.listEvents(new Date(), new Date());
+    const events = page.events;
     expect(events.length).toBe(2);
     expect(events[0].eventId).toBe('evt-1');
     expect(events[0].title).toBe('Réunion projet');
