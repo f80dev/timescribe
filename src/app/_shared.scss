@@ -1,0 +1,20 @@
+// _shared.scss — Design tokens partagés (cf §4bis du CDC).
+// Les couleurs sont alignées sur le thème azure-blue Material appliqué dans styles.scss.
+
+// Breakpoints Material standard
+$bp-mobile-max: 599.98px;
+$bp-tablet-min: 600px;
+$bp-tablet-max: 959.98px;
+$bp-desktop-min: 960px;
+$bp-desktop-lg-min: 1100px;
+
+// Hauteurs Material standard
+$toolbar-height: 56px;
+$bottom-nav-height: 56px;
+
+// Container desktop
+$container-max-width: 1280px;
+
+// Exemples d'utilisation :
+//   @media (max-width: $bp-mobile-max) { ... }
+//   @media (min-width: $bp-desktop-min) { ... }
