@@ -1,0 +1,36 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  height: 56px;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+.brand {
+  font: var(--mat-sys-title-large);
+  font-weight: 500;
+}
+
+.content {
+  flex: 1 1 auto;
+  padding: 1.5rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.lead {
+  font: var(--mat-sys-body-large);
+  margin: 0 0 1.5rem;
+}

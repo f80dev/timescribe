@@ -103,3 +103,29 @@ ADR (Architecture Decision Records) du projet TimeScribe. Chaque décision suit 
 - ✅ HTTPS automatique, déploiement continu depuis Git.
 - ✅ CDN global (faible latence partout).
 - ⚠️ SPA routing : il faut un `_redirects` fichier avec `/* /index.html 200` (équivalent du `404.html` GitHub Pages).
+
+
+## ADR-009 — Migration vers Vitest (et non Karma + Jasmine)
+
+**Contexte :** Le CDC initial (§3.2, §10) impose Karma + Jasmine + ChromeHeadlessNoSandbox + `karma.conf.js`. Or, depuis Angular CLI 21, le builder par défaut pour `ng test` est `@angular/build:unit-test` qui s'appuie sur **Vitest** (et non plus Karma). Le scaffolding `ng new` d'Angular 22 ne génère plus `karma.conf.js` ni `karma-*` launcher.
+
+**Décision :** Utiliser Vitest (Vitest 4.x via `@angular/build:unit-test`) pour les tests unitaires. Pas de `karma.conf.js`, pas de ChromeHeadlessNoSandbox — Vitest tourne en Node avec `jsdom` comme environnement DOM.
+
+**Conséquences :**
+- ✅ Aligné avec Angular 22 / `@angular/build` (esbuild + Vitest) — pas de dette technique de tooling.
+- ✅ Démarrage plus rapide (1-2 s vs ~10 s avec Karma + Chrome).
+- ⚠️ Le §10 du CDC qui parle de `karma.conf.js` et `--browsers=ChromeHeadlessNoSandbox` est obsolète. Les commandes deviennent `ng test --watch=false` (par défaut Vitest en mode single-run).
+- ⚠️ Les stratégies de mock du §10.1 (gapi, OpenAI SDK) restent valides : utiliser `vi.fn()` / `vi.mock()` au lieu de Jasmine spies.
+- ⚠️ Les seuils de couverture restent `core/` ≥ 80 % / global ≥ 70 %. Activation via `ng test --coverage` (CLI 22+).
+
+
+## ADR-010 — Convention Angular 21+ `app.ts` (sans suffixe `.component`)
+
+**Contexte :** Le CDC §2 impose `app.component.ts`, `google-auth.service.ts`, etc. Or Angular CLI 21+ a standardisé la **suppression du suffixe `.component`** pour les composants standalone — `ng generate component` produit maintenant `foo.ts` / `foo.html` / `foo.spec.ts`.
+
+**Décision :** Suivre la nouvelle convention. Les composants sont nommés `app.ts` (pas `app.component.ts`), `app-shell.ts`, etc. Les services gardent leur suffixe `.service.ts` (ils ne sont pas concernés par la suppression de suffixe). Le barrel `app.component.ts` historique est remplacé par `app.ts`.
+
+**Conséquences :**
+- ✅ Cohérence avec le scaffolding officiel Angular 22.
+- ⚠️ Les chemins du CDC §2 (arborescence imposée) restent valides mais les noms de fichiers `.component.ts` doivent être renommés mentalement en `.ts`. Les ADR-001..008 qui référencent des fichiers restent valides (les services gardent leurs suffixes).
+- ⚠️ Imports : `from './app.component'` devient `from './app'`.
