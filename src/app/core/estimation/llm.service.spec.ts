@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { LlmService } from './llm.service';
+import { LlmService, OpenAIClientFactory } from './llm.service';
+import { LlmEstimationRequest } from './prompts/estimate-duration';
 import { AppSettings } from '../models/settings.model';
 
 interface OpenAIMock {
@@ -11,8 +12,8 @@ interface OpenAIMock {
   };
 }
 
-function installOpenAI(): OpenAIMock {
-  const openai: OpenAIMock = {
+function makeOpenAIMock(): OpenAIMock {
+  return {
     chat: {
       completions: {
         create: vi.fn().mockResolvedValue({
@@ -32,9 +33,10 @@ function installOpenAI(): OpenAIMock {
       },
     },
   };
-  // Le service utilise `new OpenAI(...)`. On peut shim via un constructeur factice.
-  (globalThis as any).__openaiMock = openai;
-  return openai;
+}
+
+function factoryFor(openai: OpenAIMock): OpenAIClientFactory {
+  return { create: () => openai };
 }
 
 const SETTINGS: AppSettings = {
@@ -49,21 +51,28 @@ const SETTINGS: AppSettings = {
   theme: 'light',
 };
 
+function makeRequest(overrides: Partial<LlmEstimationRequest> = {}): LlmEstimationRequest {
+  return {
+    taskTitle: 'Préparer réunion Q3',
+    corpusText: 'extrait du corpus documentaire',
+    historicalTasks: [],
+    ...overrides,
+  };
+}
+
 describe('LlmService', () => {
   let openai: OpenAIMock;
+  let svc: LlmService;
 
   beforeEach(() => {
-    openai = installOpenAI();
+    openai = makeOpenAIMock();
     TestBed.configureTestingModule({});
+    svc = TestBed.inject(LlmService);
+    svc.setFactory(factoryFor(openai));
   });
 
   it('estimateDuration() envoie un payload conforme à la spec §5.4', async () => {
-    const svc = TestBed.inject(LlmService);
-    await svc.estimateDuration(
-      { taskTitle: 'Préparer réunion Q3' },
-      SETTINGS,
-      'fake-api-key',
-    );
+    await svc.estimateDuration(makeRequest(), SETTINGS, 'fake-api-key');
     expect(openai.chat.completions.create).toHaveBeenCalledTimes(1);
     const payload = openai.chat.completions.create.mock.calls[0][0];
     expect(payload.model).toBe('MiniMax-M3');
@@ -77,21 +86,17 @@ describe('LlmService', () => {
   });
 
   it('GARDE-FOU §13/ADR-002 : response_format est json_object, JAMAIS json_schema', async () => {
-    const svc = TestBed.inject(LlmService);
-    await svc.estimateDuration({ taskTitle: 'Test' }, SETTINGS, 'fake-key');
-    const payload = openai.chat.completions.create.mock.calls[0][0];
-    expect(payload.response_format.type).toBe('json_object');
-    expect(payload.response_format).not.toHaveProperty('schema');
-    // Aucun appel ne doit utiliser json_schema
+    await svc.estimateDuration(makeRequest(), SETTINGS, 'fake-key');
     for (const call of openai.chat.completions.create.mock.calls) {
       const p = call[0];
+      expect(p.response_format.type).toBe('json_object');
+      expect(p.response_format).not.toHaveProperty('schema');
       expect(p.response_format.type).not.toBe('json_schema');
     }
   });
 
   it('parse la réponse JSON strict et retourne un objet typé', async () => {
-    const svc = TestBed.inject(LlmService);
-    const result = await svc.estimateDuration({ taskTitle: 'X' }, SETTINGS, 'fake-key');
+    const result = await svc.estimateDuration(makeRequest(), SETTINGS, 'fake-key');
     expect(result.durationMinutes).toBe(45);
     expect(result.confidence).toBe(0.78);
     expect(result.rationale).toContain('corpus');
@@ -102,9 +107,8 @@ describe('LlmService', () => {
     openai.chat.completions.create.mockResolvedValueOnce({
       choices: [{ message: { content: 'pas du json du tout' } }],
     });
-    const svc = TestBed.inject(LlmService);
     await expect(
-      svc.estimateDuration({ taskTitle: 'X' }, SETTINGS, 'fake-key'),
+      svc.estimateDuration(makeRequest(), SETTINGS, 'fake-key'),
     ).rejects.toThrow();
   });
 
@@ -112,9 +116,8 @@ describe('LlmService', () => {
     openai.chat.completions.create.mockResolvedValueOnce({
       choices: [{ message: { content: JSON.stringify({ durationMinutes: -5 }) } }],
     });
-    const svc = TestBed.inject(LlmService);
     await expect(
-      svc.estimateDuration({ taskTitle: 'X' }, SETTINGS, 'fake-key'),
+      svc.estimateDuration(makeRequest(), SETTINGS, 'fake-key'),
     ).rejects.toThrow();
   });
 
@@ -123,9 +126,8 @@ describe('LlmService', () => {
       status: 401,
       message: 'Invalid API key',
     });
-    const svc = TestBed.inject(LlmService);
     await expect(
-      svc.estimateDuration({ taskTitle: 'X' }, SETTINGS, 'wrong-key'),
+      svc.estimateDuration(makeRequest(), SETTINGS, 'wrong-key'),
     ).rejects.toThrow(/401|auth/i);
   });
 
@@ -134,18 +136,14 @@ describe('LlmService', () => {
       status: 429,
       message: 'Rate limit',
     });
-    const svc = TestBed.inject(LlmService);
     await expect(
-      svc.estimateDuration({ taskTitle: 'X' }, SETTINGS, 'fake-key'),
+      svc.estimateDuration(makeRequest(), SETTINGS, 'fake-key'),
     ).rejects.toThrow(/429|rate/i);
   });
 
   it('la base URL est surchargeable via settings.llmBaseUrl', async () => {
-    const svc = TestBed.inject(LlmService);
     const custom = { ...SETTINGS, llmBaseUrl: 'https://example.com/v1' };
-    await svc.estimateDuration({ taskTitle: 'X' }, custom, 'fake-key');
-    // On ne peut pas introspecter le constructeur d'OpenAI facilement,
-    // mais on vérifie que le call n'a pas planté et qu'il a été fait.
+    await svc.estimateDuration(makeRequest(), custom, 'fake-key');
     expect(openai.chat.completions.create).toHaveBeenCalledTimes(1);
   });
 });
