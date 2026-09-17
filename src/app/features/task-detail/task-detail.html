@@ -1,0 +1,132 @@
+<section class="task-detail">
+  <header class="detail-header">
+    <button mat-icon-button (click)="goBack()" aria-label="Retour">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1>Tâche</h1>
+  </header>
+
+  @if (loading()) {
+    <p class="status">
+      <mat-spinner diameter="20" />
+      <span>Chargement…</span>
+    </p>
+  } @else if (task(); as t) {
+    <div class="layout">
+      <mat-card appearance="outlined" class="info-card">
+        <mat-card-header>
+          <mat-card-title>{{ t.title }}</mat-card-title>
+          @if (t.due) {
+            <mat-card-subtitle>
+              <mat-icon class="inline-icon">event</mat-icon>
+              Échéance : {{ t.due | date: 'fullDate' }}
+            </mat-card-subtitle>
+          }
+        </mat-card-header>
+        <mat-card-content>
+          <h3>Notes</h3>
+          <textarea
+            class="notes"
+            [ngModel]="t.notes ?? ''"
+            (ngModelChange)="saveNotes($event)"
+            rows="4"
+            placeholder="Notes…"
+            aria-label="Notes"
+          ></textarea>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="estimate-card">
+        <mat-card-header>
+          <mat-card-title>Estimation de charge</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (estimate(); as est) {
+            <div class="estimate-summary">
+              <mat-chip-set>
+                <mat-chip class="duration">
+                  <mat-icon matChipAvatar>schedule</mat-icon>
+                  {{ est.durationMinutes | duration }}
+                </mat-chip>
+                <mat-chip [class]="'source-' + est.source">
+                  <mat-icon matChipAvatar>{{
+                    est.source === 'manual' ? 'person' :
+                    est.source === 'llm' ? 'auto_awesome' :
+                    est.source === 'inherited' ? 'history' : 'help_outline'
+                  }}</mat-icon>
+                  {{
+                    est.source === 'manual' ? 'Manuel' :
+                    est.source === 'llm' ? 'LLM' :
+                    est.source === 'inherited' ? 'Hérité' : 'Aucune'
+                  }}
+                </mat-chip>
+                @if (est.overriddenAt) {
+                  <mat-chip class="override">
+                    <mat-icon matChipAvatar>edit</mat-icon>
+                    Modifiée le {{ est.overriddenAt | date: 'short' }}
+                  </mat-chip>
+                }
+              </mat-chip-set>
+            </div>
+
+            @if (est.rationale) {
+              <details class="rationale">
+                <summary>Explication LLM</summary>
+                <p>{{ est.rationale }}</p>
+              </details>
+            }
+
+            @if (est.similarTaskIds && est.similarTaskIds.length > 0) {
+              <p class="similar">
+                Tâches historiques similaires :
+                @for (id of est.similarTaskIds; track id) {
+                  <a [routerLink]="['/task', id]">{{ id }}</a>
+                }
+              </p>
+            }
+          } @else {
+            <p class="empty">Aucune estimation. Saisissez une durée ci-dessous.</p>
+          }
+
+          <mat-divider />
+
+          <h3>Ajuster manuellement</h3>
+          <app-duration-editor
+            [valueMinutes]="estimate()?.durationMinutes ?? 0"
+            (apply)="onApplyEditor($event)"
+          />
+
+          @if (saving()) {
+            <p class="status"><mat-spinner diameter="16" /> Enregistrement…</p>
+          }
+
+          <div class="reeval-row">
+            <button
+              mat="outlined"
+              color="primary"
+              (click)="onReevaluateClick()"
+              [disabled]="saving()"
+            >
+              <mat-icon>auto_awesome</mat-icon>
+              <span>
+                @if (hasManualOverride() && !overrideConfirmed()) {
+                  Confirmer l'écrasement de l'override
+                } @else {
+                  Relancer l'estimation LLM
+                }
+              </span>
+            </button>
+            @if (overrideConfirmed()) {
+              <span class="confirmed-hint" role="status">
+                <mat-icon>check_circle</mat-icon>
+                Cliquez à nouveau pour relancer
+              </span>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  } @else {
+    <p class="empty">Tâche introuvable.</p>
+  }
+</section>

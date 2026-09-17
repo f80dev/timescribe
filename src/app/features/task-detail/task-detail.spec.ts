@@ -33,6 +33,9 @@ class FakeDexie {
   getAllEstimates = vi.fn(async () => Array.from(this.estimates.values()));
   countManualEstimates = vi.fn(async () => 0);
   getSettings = vi.fn(async () => DEFAULT_SETTINGS);
+  getAllTasks = vi.fn(async () => Array.from(this.tasks.values()));
+  getTasksByList = vi.fn(async () => Array.from(this.tasks.values()));
+  upsertTasks = vi.fn();
 }
 
 class FakeTasksApi {

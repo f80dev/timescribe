@@ -19,6 +19,11 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
       {
+        path: 'task/:id',
+        loadComponent: () =>
+          import('./features/task-detail/task-detail').then((m) => m.TaskDetail),
+      },
+      {
         path: 'corpus',
         loadComponent: () =>
           import('./features/corpus-settings/corpus-settings').then((m) => m.CorpusSettings),
