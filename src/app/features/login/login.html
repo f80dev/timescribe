@@ -1,0 +1,37 @@
+<mat-card appearance="outlined" class="card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar class="avatar">schedule</mat-icon>
+    <mat-card-title>TimeScribe</mat-card-title>
+    <mat-card-subtitle>Évaluez la durée de vos tâches Google Tasks</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <p>
+      Connectez-vous avec votre compte Google pour accéder à vos tâches,
+      Drive et Calendar. Vos données restent dans votre navigateur — aucun
+      serveur backend.
+    </p>
+
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+  </mat-card-content>
+
+  <mat-card-actions align="end">
+    <button
+      mat="filled"
+      color="primary"
+      (click)="onSignIn()"
+      [disabled]="loading()"
+      aria-label="Se connecter avec Google"
+    >
+      @if (loading()) {
+        <mat-spinner diameter="20" />
+        <span>Connexion…</span>
+      } @else {
+        <mat-icon>login</mat-icon>
+        <span>Se connecter avec Google</span>
+      }
+    </button>
+  </mat-card-actions>
+</mat-card>

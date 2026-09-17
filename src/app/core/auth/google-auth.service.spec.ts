@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { GoogleAuthService, GOOGLE_SCOPES } from './google-auth.service';
+import { GoogleAuthService } from './google-auth.service';
+import { GOOGLE_SCOPES } from './google-auth.types';
 
 interface MockTokenResponse {
   access_token: string;
@@ -125,7 +126,7 @@ describe('GoogleAuthService', () => {
     expect(GOOGLE_SCOPES).toContain('email');
     expect(GOOGLE_SCOPES).toContain('profile');
     // Garde-fou §13 : PAS de scope Gmail
-    expect(GOOGLE_SCOPES.find((s) => s.includes('gmail'))).toBeUndefined();
+    expect(GOOGLE_SCOPES.find((s: string) => s.includes('gmail'))).toBeUndefined();
   });
 
   it('signIn() appelle initTokenClient + requestAccessToken, stocke le token en mémoire', async () => {

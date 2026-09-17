@@ -42,8 +42,8 @@ describe('authGuard', () => {
     fake.authenticated = false;
     const result = await router.navigate(['/protected']);
     expect(result).toBe(true);
-    // Après navigation, on doit être sur /login (le guard redirige)
-    expect(router.url).toBe('/login');
+    // Après navigation, on doit être sur /login (le guard redirige avec returnUrl)
+    expect(router.url).toBe('/login?returnUrl=%2Fprotected');
   });
 
   it('laisse passer si authentifié', async () => {
