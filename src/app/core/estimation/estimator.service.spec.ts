@@ -43,12 +43,14 @@ function estimate(overrides: Partial<TaskEstimate> = {}): TaskEstimate {
 }
 
 interface FakeDexie {
+  // Tables (utilisées par DexieService)
   tasks: { toArray: ReturnType<typeof vi.fn>; put: ReturnType<typeof vi.fn> };
-  estimates: {
-    get: ReturnType<typeof vi.fn>;
-    put: ReturnType<typeof vi.fn>;
-    where: ReturnType<typeof vi.fn>;
-  };
+  estimates: { get: ReturnType<typeof vi.fn>; put: ReturnType<typeof vi.fn>; where: ReturnType<typeof vi.fn>; toArray: ReturnType<typeof vi.fn> };
+  // Méthodes du service DexieService utilisées par EstimatorService
+  getEstimate: ReturnType<typeof vi.fn>;
+  getAllEstimates: ReturnType<typeof vi.fn>;
+  countManualEstimates: ReturnType<typeof vi.fn>;
+  upsertEstimate: ReturnType<typeof vi.fn>;
 }
 
 function makeFakeDexie(): FakeDexie {
@@ -63,7 +65,12 @@ function makeFakeDexie(): FakeDexie {
       where: vi.fn().mockReturnValue({
         equals: () => ({ toArray: async () => [] }),
       }),
+      toArray: vi.fn().mockResolvedValue([]),
     },
+    getEstimate: vi.fn().mockResolvedValue(undefined),
+    getAllEstimates: vi.fn().mockResolvedValue([]),
+    countManualEstimates: vi.fn().mockResolvedValue(0),
+    upsertEstimate: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -88,25 +95,23 @@ describe('EstimatorService', () => {
   });
 
   it('sous le seuil de tâches évaluées manuellement → fallback source=none', async () => {
-    // 2 tâches évaluées (sous le seuil 5)
-    fakeDexie.estimates.where.mockReturnValueOnce({
-      equals: () => ({ toArray: async () => [estimate({ taskId: 'h1' }), estimate({ taskId: 'h2' })] }),
-    });
+    fakeDexie.countManualEstimates.mockResolvedValueOnce(2); // < 5
     const result = await svc.estimateTask(task('t1'), SETTINGS, 'corpus', 'api-key');
     expect(result.source).toBe('none');
     expect(result.durationMinutes).toBe(0);
-    // Pas d'appel LLM
     expect(llmEstimate).not.toHaveBeenCalled();
   });
 
   it('au-dessus du seuil → appel LLM + estimate retourné', async () => {
-    // 5 tâches évaluées (>= seuil)
-    const hist = Array.from({ length: 5 }, (_, i) =>
-      estimate({ taskId: `h${i}`, durationMinutes: 30 + i * 10 }),
-    );
-    fakeDexie.estimates.where.mockReturnValueOnce({
-      equals: () => ({ toArray: async () => hist }),
-    });
+    fakeDexie.countManualEstimates.mockResolvedValueOnce(5); // >= seuil
+    const hist = Array.from({ length: 5 }, (_, i) => ({
+      taskId: `h${i}`,
+      durationMinutes: 30 + i * 10,
+      confidence: 0.5,
+      source: 'manual' as const,
+      estimatedAt: new Date(),
+    }));
+    fakeDexie.getAllEstimates.mockResolvedValueOnce(hist);
     const llmResp: LlmEstimationResponse = {
       durationMinutes: 45,
       confidence: 0.8,
@@ -121,29 +126,33 @@ describe('EstimatorService', () => {
   });
 
   it('override manuel (estimate avec overriddenBy=manual) est prioritaire', async () => {
-    // Tâche a déjà une estimation avec overriddenBy = manual
-    fakeDexie.estimates.get.mockResolvedValueOnce(
+    fakeDexie.getEstimate.mockResolvedValueOnce(
       estimate({ durationMinutes: 120, source: 'llm', overriddenBy: 'manual', overriddenAt: new Date() }),
     );
     const result = await svc.estimateTask(task('t1'), SETTINGS, 'corpus', 'api-key');
     expect(result.source).toBe('manual');
     expect(result.durationMinutes).toBe(120);
-    // Pas d'appel LLM
     expect(llmEstimate).not.toHaveBeenCalled();
   });
 
   it('persiste l\'estimate dans Dexie après appel LLM', async () => {
-    fakeDexie.estimates.where.mockReturnValueOnce({
-      equals: () => ({ toArray: async () => Array.from({ length: 5 }, (_, i) => estimate({ taskId: `h${i}` })) }),
-    });
+    fakeDexie.countManualEstimates.mockResolvedValueOnce(5);
+    const hist = Array.from({ length: 5 }, (_, i) => ({
+      taskId: `h${i}`,
+      durationMinutes: 30 + i * 10,
+      confidence: 0.5,
+      source: 'manual' as const,
+      estimatedAt: new Date(),
+    }));
+    fakeDexie.getAllEstimates.mockResolvedValueOnce(hist);
     llmEstimate.mockResolvedValueOnce({
       durationMinutes: 60,
       confidence: 0.7,
       rationale: 'OK',
     });
     await svc.estimateTask(task('t1'), SETTINGS, 'corpus', 'api-key');
-    expect(fakeDexie.estimates.put).toHaveBeenCalledTimes(1);
-    const saved = fakeDexie.estimates.put.mock.calls[0][0];
+    expect(fakeDexie.upsertEstimate).toHaveBeenCalledTimes(1);
+    const saved = fakeDexie.upsertEstimate.mock.calls[0][0];
     expect(saved.taskId).toBe('t1');
     expect(saved.durationMinutes).toBe(60);
     expect(saved.source).toBe('llm');
