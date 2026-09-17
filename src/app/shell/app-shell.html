@@ -17,9 +17,13 @@
         <mat-icon matListItemIcon>folder</mat-icon>
         <span matListItemTitle>Corpus</span>
       </a>
+      <a mat-list-item routerLink="/import-calendar" routerLinkActive="active" (click)="closeIfOver()">
+        <mat-icon matListItemIcon>event</mat-icon>
+        <span matListItemTitle>Import Calendar</span>
+      </a>
       <a mat-list-item routerLink="/import" routerLinkActive="active" (click)="closeIfOver()">
         <mat-icon matListItemIcon>upload</mat-icon>
-        <span matListItemTitle>Import</span>
+        <span matListItemTitle>Import CSV</span>
       </a>
       <a mat-list-item routerLink="/settings" routerLinkActive="active" (click)="closeIfOver()">
         <mat-icon matListItemIcon>settings</mat-icon>

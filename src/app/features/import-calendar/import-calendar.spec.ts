@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { signal } from '@angular/core';
 import { ImportCalendar } from './import-calendar';
@@ -35,6 +35,11 @@ class FakeDexie {
   upsertTask = vi.fn();
 }
 
+class FakeRouter {
+  navigateByUrl = vi.fn(async () => true);
+  navigate = vi.fn(async () => true);
+}
+
 const mkEvent = (over: Partial<CalendarEventCandidate> = {}): CalendarEventCandidate => ({
   eventId: 'e1',
   title: 'Réunion équipe',
@@ -64,6 +69,7 @@ describe('ImportCalendar', () => {
         { provide: GoogleCalendarService, useValue: calendar },
         { provide: GoogleTasksService, useValue: tasks },
         { provide: DexieService, useValue: new FakeDexie() },
+        { provide: Router, useValue: new FakeRouter() },
       ],
     }).compileComponents();
   });

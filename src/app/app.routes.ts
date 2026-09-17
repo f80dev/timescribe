@@ -34,6 +34,11 @@ export const routes: Routes = [
           import('./features/import-csv/import-csv').then((m) => m.ImportCsv),
       },
       {
+        path: 'import-calendar',
+        loadComponent: () =>
+          import('./features/import-calendar/import-calendar').then((m) => m.ImportCalendar),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/settings').then((m) => m.Settings),

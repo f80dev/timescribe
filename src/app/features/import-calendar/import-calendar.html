@@ -1,0 +1,115 @@
+<section class="import-cal">
+  <header class="import-header">
+    <h1>Importer depuis Google Calendar</h1>
+    <p class="subtitle">
+      Sélectionnez une plage de dates, choisissez les événements à importer,
+      puis créez les tâches correspondantes dans Google Tasks.
+    </p>
+  </header>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <div class="controls">
+    <mat-form-field appearance="outline" class="date-field">
+      <mat-label>Du</mat-label>
+      <input
+        matInput
+        type="date"
+        [ngModel]="fromDate()"
+        (ngModelChange)="fromDate.set($event)"
+        aria-label="Date de début"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="date-field">
+      <mat-label>Au</mat-label>
+      <input
+        matInput
+        type="date"
+        [ngModel]="toDate()"
+        (ngModelChange)="toDate.set($event)"
+        aria-label="Date de fin"
+      />
+    </mat-form-field>
+
+    <button
+      mat="outlined"
+      (click)="refresh()"
+      [disabled]="loading()"
+      class="refresh-btn"
+    >
+      <mat-icon>refresh</mat-icon>
+      <span>Charger</span>
+    </button>
+  </div>
+
+  @if (loading()) {
+    <p class="status">
+      <mat-spinner diameter="20" />
+      <span>Chargement des événements…</span>
+    </p>
+  } @else if (events().length === 0) {
+    <p class="empty">Aucun événement sur cette plage.</p>
+  } @else {
+    <p class="count">
+      {{ events().length }} événement(s) — {{ selectedCount() }} sélectionné(s)
+    </p>
+
+    <ul class="event-list">
+      @for (e of events(); track e.eventId) {
+        <li>
+          <mat-card appearance="outlined" class="event-card">
+            <mat-card-content>
+              <mat-checkbox
+                [checked]="isSelected(e.eventId)"
+                (change)="toggleSelection(e.eventId)"
+                [aria-label]="'Sélectionner ' + e.title"
+              />
+              <div class="event-info">
+                <h3>{{ e.title }}</h3>
+                <p class="event-meta">
+                  <mat-icon class="meta-icon">event</mat-icon>
+                  {{ e.start | date: 'short' }} → {{ e.end | date: 'short' }}
+                </p>
+                <mat-chip-set>
+                  <mat-chip class="duration">
+                    <mat-icon matChipAvatar>schedule</mat-icon>
+                    {{ e.durationMinutes | duration }}
+                  </mat-chip>
+                  @if (e.attendees.length > 0) {
+                    <mat-chip>
+                      <mat-icon matChipAvatar>group</mat-icon>
+                      {{ e.attendees.length }} participant(s)
+                    </mat-chip>
+                  }
+                </mat-chip-set>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </li>
+      }
+    </ul>
+
+    <mat-divider />
+
+    <div class="create-row">
+      <button
+        mat="filled"
+        color="primary"
+        class="create-btn"
+        (click)="createTasks()"
+        [disabled]="selectedCount() === 0 || creating()"
+      >
+        @if (creating()) {
+          <mat-spinner diameter="20" />
+          <span>Création en cours…</span>
+        } @else {
+          <mat-icon>add_task</mat-icon>
+          <span>Créer {{ selectedCount() }} tâche(s)</span>
+        }
+      </button>
+    </div>
+  }
+</section>
