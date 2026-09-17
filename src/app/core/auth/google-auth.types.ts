@@ -30,6 +30,7 @@ export interface GapiClient {
   setToken(token: { access_token: string } | null): void;
   init(config: { discoveryDocs?: string[]; scope?: string }): Promise<void>;
   tasks: GapiTasksNamespace;
+  drive?: GapiDriveNamespace;
 }
 
 export interface GapiTasksNamespace {
@@ -42,6 +43,26 @@ export interface GapiTasksNamespace {
     patch(params: { tasklist: string; task: string; resource: unknown }): Promise<{ result: unknown }>;
     delete(params: { tasklist: string; task: string }): Promise<unknown>;
   };
+}
+
+export interface GapiDriveNamespace {
+  files: {
+    list(params: Record<string, unknown>): Promise<{
+      result: { files?: GapiDriveFile[]; nextPageToken?: string };
+    }>;
+    get(params: { fileId: string; alt?: string }): Promise<{
+      body?: string;
+      result?: GapiDriveFile;
+    }>;
+  };
+}
+
+export interface GapiDriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: string;
+  modifiedTime?: string;
 }
 
 export interface Gapi {
