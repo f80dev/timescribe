@@ -13,14 +13,32 @@ import { AppSettings } from '../models/settings.model';
  * les données dans un Map en mémoire.
  */
 
-class InMemoryTable<T extends { id?: string; taskId?: string; driveFileId?: string }> {
-  data = new Map<string, T>();
+class InMemoryTable {
+  data = new Map<string, unknown>();
+  put(row: unknown) {
+    const id = (row as Record<string, unknown>)['id']
+      ?? (row as Record<string, unknown>)['driveFileId']
+      ?? (row as Record<string, unknown>)['taskId'];
+    if (typeof id === 'string') this.data.set(id, row);
+    return Promise.resolve();
+  }
+  bulkPut(rows: unknown[]) {
+    for (const r of rows) this.put(r);
+    return Promise.resolve();
+  }
+  get(id: string) {
+    return Promise.resolve(this.data.get(id));
+  }
+  delete(id: string) {
+    this.data.delete(id);
+    return Promise.resolve();
+  }
   where(indexName: string) {
     return {
       equals: (value: string) => ({
         toArray: async () =>
           Array.from(this.data.values()).filter((r) => {
-            const rAny = r as unknown as Record<string, unknown>;
+            const rAny = r as Record<string, unknown>;
             return rAny[indexName] === value;
           }),
       }),
@@ -29,18 +47,19 @@ class InMemoryTable<T extends { id?: string; taskId?: string; driveFileId?: stri
   toArray() {
     return Promise.resolve(Array.from(this.data.values()));
   }
+  clear() {
+    this.data.clear();
+    return Promise.resolve();
+  }
 }
 
 class FakeDexie {
-  tables: Record<string, InMemoryTable<unknown>> = {};
-  constructor() {
-    this.tables['tasks'] = new InMemoryTable();
-    this.tables['estimates'] = new InMemoryTable();
-    this.tables['corpusDocs'] = new InMemoryTable();
-    this.tables['corpusConfig'] = new InMemoryTable();
-    this.tables['settings'] = new InMemoryTable();
-    this.tables['importBatches'] = new InMemoryTable();
-  }
+  tasks = new InMemoryTable();
+  estimates = new InMemoryTable();
+  corpusDocs = new InMemoryTable();
+  corpusConfig = new InMemoryTable();
+  settings = new InMemoryTable();
+  importBatches = new InMemoryTable();
 }
 
 describe('DexieService', () => {
