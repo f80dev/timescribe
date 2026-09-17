@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { InstallPromptService } from './install-prompt.service';
 
@@ -26,6 +27,7 @@ describe('InstallPromptService', () => {
       events.push({ type, handler });
     }) as any;
     window.removeEventListener = (() => {}) as any;
+    TestBed.configureTestingModule({});
   });
 
   afterEach(() => {
@@ -34,12 +36,12 @@ describe('InstallPromptService', () => {
   });
 
   it('écoute beforeinstallprompt au démarrage', () => {
-    new InstallPromptService();
+    TestBed.inject(InstallPromptService);
     expect(events.some((e) => e.type === 'beforeinstallprompt')).toBe(true);
   });
 
   it('promptAvailable passe à true après un événement beforeinstallprompt', () => {
-    const svc = new InstallPromptService();
+    const svc = TestBed.inject(InstallPromptService);
     expect(svc.promptAvailable()).toBe(false);
     const ev = makeBeforeInstallPromptEvent();
     events.find((e) => e.type === 'beforeinstallprompt')!.handler(ev);
@@ -47,16 +49,15 @@ describe('InstallPromptService', () => {
   });
 
   it('promptAvailable passe à false après appinstalled', () => {
-    const svc = new InstallPromptService();
+    const svc = TestBed.inject(InstallPromptService);
     events.find((e) => e.type === 'beforeinstallprompt')!.handler(makeBeforeInstallPromptEvent());
     expect(svc.promptAvailable()).toBe(true);
-    const installedHandler = events.find((e) => e.type === 'appinstalled')!.handler;
-    installedHandler(new Event('appinstalled'));
+    events.find((e) => e.type === 'appinstalled')!.handler(new Event('appinstalled'));
     expect(svc.promptAvailable()).toBe(false);
   });
 
   it('triggerInstall() appelle prompt() et résout le userChoice', async () => {
-    const svc = new InstallPromptService();
+    const svc = TestBed.inject(InstallPromptService);
     const ev = makeBeforeInstallPromptEvent();
     events.find((e) => e.type === 'beforeinstallprompt')!.handler(ev);
     const outcome = await svc.triggerInstall();

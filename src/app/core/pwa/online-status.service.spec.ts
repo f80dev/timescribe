@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { OnlineStatusService } from './online-status.service';
 
@@ -16,6 +17,7 @@ describe('OnlineStatusService', () => {
       (events[type] ||= []).push(handler);
     }) as any;
     window.removeEventListener = (() => {}) as any;
+    TestBed.configureTestingModule({});
   });
 
   afterEach(() => {
@@ -30,13 +32,13 @@ describe('OnlineStatusService', () => {
 
   it('isOnline reflète navigator.onLine au démarrage', () => {
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
-    const svc = new OnlineStatusService();
+    const svc = TestBed.inject(OnlineStatusService);
     expect(svc.isOnline()).toBe(true);
   });
 
   it('isOnline passe à false sur événement offline', () => {
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
-    const svc = new OnlineStatusService();
+    const svc = TestBed.inject(OnlineStatusService);
     expect(svc.isOnline()).toBe(true);
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
     fire('offline');
@@ -45,7 +47,7 @@ describe('OnlineStatusService', () => {
 
   it('isOnline repasse à true sur événement online', () => {
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
-    const svc = new OnlineStatusService();
+    const svc = TestBed.inject(OnlineStatusService);
     expect(svc.isOnline()).toBe(false);
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
     fire('online');
@@ -53,7 +55,7 @@ describe('OnlineStatusService', () => {
   });
 
   it('écoute les événements online et offline', () => {
-    new OnlineStatusService();
+    TestBed.inject(OnlineStatusService);
     expect(events['online']).toBeDefined();
     expect(events['offline']).toBeDefined();
   });

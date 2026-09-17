@@ -1,0 +1,56 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav
+    #drawer
+    class="sidenav"
+    [mode]="sidenavMode()"
+    [opened]="sidenavMode() === 'side'"
+    [disableClose]="sidenavMode() === 'side'"
+    position="start"
+  >
+    <mat-toolbar class="sidenav-header">TimeScribe</mat-toolbar>
+    <mat-nav-list>
+      <a mat-list-item routerLink="/dashboard" routerLinkActive="active" (click)="closeIfOver()">
+        <mat-icon matListItemIcon>dashboard</mat-icon>
+        <span matListItemTitle>Tâches</span>
+      </a>
+      <a mat-list-item routerLink="/corpus" routerLinkActive="active" (click)="closeIfOver()">
+        <mat-icon matListItemIcon>folder</mat-icon>
+        <span matListItemTitle>Corpus</span>
+      </a>
+      <a mat-list-item routerLink="/import" routerLinkActive="active" (click)="closeIfOver()">
+        <mat-icon matListItemIcon>upload</mat-icon>
+        <span matListItemTitle>Import</span>
+      </a>
+      <a mat-list-item routerLink="/settings" routerLinkActive="active" (click)="closeIfOver()">
+        <mat-icon matListItemIcon>settings</mat-icon>
+        <span matListItemTitle>Settings</span>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary" class="toolbar">
+      @if (sidenavMode() === 'over') {
+        <button mat-icon-button (click)="drawer.toggle()" aria-label="Ouvrir le menu">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <span class="brand">TimeScribe</span>
+      <span class="spacer"></span>
+      @if (!online.isOnline()) {
+        <span class="offline-badge" role="status" aria-live="polite">
+          <mat-icon>cloud_off</mat-icon>
+          Hors ligne — estimation LLM désactivée
+        </span>
+      }
+    </mat-toolbar>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+
+    @if (showBottomNav()) {
+      <app-bottom-nav class="bottom-nav" />
+    }
+  </mat-sidenav-content>
+</mat-sidenav-container>
