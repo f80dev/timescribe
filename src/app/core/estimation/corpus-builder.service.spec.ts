@@ -23,7 +23,7 @@ class FakeDriveService {
   contents = new Map<string, string>();
   /** map fileId → DriveFile (taille, mime...) */
   files = new Map<string, DriveFile>();
-  /** séquence de pages : à chaque appel listFiles on dépile une page */
+  /** file de pages ; la 1ère est à l'index 0, la suivante est demandée via nextPageToken. */
   pages: DriveListPage[] = [];
 
   async listFiles(
@@ -32,11 +32,11 @@ class FakeDriveService {
     pageToken?: string,
     _pageSize?: number,
   ): Promise<DriveListPage> {
-    // 1ère page si pas de token ; sinon on cherche par token
-    const page = pageToken
-      ? this.pages.find((p) => p.nextPageToken === pageToken) ?? this.pages[this.pages.length - 1]
-      : this.pages[0];
-    return page ?? { files: [] };
+    if (!pageToken) return this.pages[0] ?? { files: [] };
+    // pageToken = nextPageToken de la page précédente ; on cherche la page suivante
+    const idx = this.pages.findIndex((p) => p.nextPageToken === pageToken);
+    if (idx < 0) return { files: [] };
+    return this.pages[idx + 1] ?? { files: [] };
   }
 
   async getFileText(fileId: string): Promise<string> {
@@ -51,7 +51,7 @@ class FakeDriveService {
     return `h${h}`;
   }
 
-  /** Helper pour configurer une page dans la prochaine séquence. */
+  /** Configure une page ; le nextPageToken sert d'entrée pour la page suivante. */
   pushPage(files: DriveFile[], nextPageToken?: string): void {
     this.pages.push({ files, nextPageToken });
   }
@@ -66,6 +66,9 @@ class FakeDexie {
     const existing = this.corpusDocs.get(doc.driveFileId);
     if (existing && existing.contentHash === doc.contentHash) return;
     this.corpusDocs.set(doc.driveFileId, doc);
+  }
+  async deleteCorpusDoc(driveFileId: string): Promise<void> {
+    this.corpusDocs.delete(driveFileId);
   }
   async getAllCorpusDocs(): Promise<CorpusDoc[]> {
     return Array.from(this.corpusDocs.values());

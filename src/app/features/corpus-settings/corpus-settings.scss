@@ -1,0 +1,58 @@
+.corpus-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+
+  header h1 {
+    margin: 0 0 8px;
+    font-size: 1.75rem;
+  }
+  .subtitle {
+    color: var(--mat-sys-on-surface-variant, #666);
+    margin: 0;
+    code {
+      background: var(--mat-sys-surface-container, #f4f4f4);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+  }
+  .status {
+    .status-list {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 6px 16px;
+      margin: 0;
+      dt {
+        font-weight: 600;
+        color: var(--mat-sys-on-surface-variant, #666);
+      }
+      dd {
+        margin: 0;
+        small {
+          color: var(--mat-sys-on-surface-variant, #888);
+          font-family: monospace;
+        }
+      }
+    }
+  }
+  .empty {
+    color: var(--mat-sys-on-surface-variant, #888);
+    font-style: italic;
+  }
+  .error {
+    color: var(--mat-sys-error, #b00020);
+    background: var(--mat-sys-error-container, #fde7e9);
+    padding: 12px;
+    border-radius: 4px;
+    margin: 0;
+  }
+  .loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--mat-sys-on-surface-variant, #666);
+  }
+}

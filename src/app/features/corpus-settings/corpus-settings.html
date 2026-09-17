@@ -1,0 +1,44 @@
+<section class="corpus-page">
+  <header>
+    <h1>Corpus documentaire</h1>
+    <p class="subtitle">
+      Sélectionnez un dossier Google Drive pour servir de contexte à l'estimation
+      des durées par le LLM. Les fichiers <code>text/*</code> sont extraits
+      automatiquement (PDF/Docs : extraction prévue v2 — ADR-011).
+    </p>
+  </header>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  @if (config(); as cfg) {
+    <mat-card appearance="outlined" class="status">
+      <mat-card-content>
+        <dl class="status-list">
+          <dt>Dossier</dt>
+          <dd>{{ cfg.driveFolderName }} <small>({{ cfg.driveFolderId }})</small></dd>
+          <dt>Documents indexés</dt>
+          <dd>{{ cfg.totalDocs }}</dd>
+          <dt>Caractères totaux</dt>
+          <dd>{{ cfg.totalChars }}</dd>
+          <dt>Dernière synchronisation</dt>
+          <dd>{{ formatDate(cfg.lastSyncAt) }}</dd>
+        </dl>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <p class="empty">Aucun corpus configuré pour le moment.</p>
+  }
+
+  <mat-divider />
+
+  <app-corpus-picker (folderSelected)="resync($event.folderId, $event.folderName)" />
+
+  @if (loading()) {
+    <p class="loading" role="status">
+      <mat-spinner diameter="20" />
+      <span>Synchronisation en cours…</span>
+    </p>
+  }
+</section>

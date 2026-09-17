@@ -1,0 +1,22 @@
+.corpus-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    align-items: flex-start;
+    flex-wrap: wrap;
+
+    .field-id {
+      flex: 2 1 280px;
+    }
+    .field-name {
+      flex: 1 1 200px;
+    }
+    button {
+      align-self: center;
+    }
+  }
+}

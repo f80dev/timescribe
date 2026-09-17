@@ -1,0 +1,37 @@
+<div class="corpus-picker">
+  <mat-form-field appearance="outline" class="field-id">
+    <mat-label>ID du dossier Drive</mat-label>
+    <input
+      matInput
+      type="text"
+      [ngModel]="folderId()"
+      (ngModelChange)="folderId.set($event)"
+      placeholder="ex. 1A2b3C4d5E6f..."
+      aria-label="ID du dossier Drive"
+    />
+    <mat-hint>Extrait de l'URL drive.google.com/drive/folders/&lt;ID&gt;</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="field-name">
+    <mat-label>Nom (optionnel)</mat-label>
+    <input
+      matInput
+      type="text"
+      [ngModel]="folderName()"
+      (ngModelChange)="folderName.set($event)"
+      placeholder="Mon dossier corpus"
+      aria-label="Nom du dossier"
+    />
+  </mat-form-field>
+
+  <button
+    mat="filled"
+    color="primary"
+    (click)="onSelect()"
+    [disabled]="!folderId().trim()"
+    aria-label="Choisir ce dossier comme corpus"
+  >
+    <mat-icon>folder_open</mat-icon>
+    <span>Choisir</span>
+  </button>
+</div>

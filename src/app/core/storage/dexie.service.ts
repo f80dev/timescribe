@@ -107,6 +107,10 @@ export class DexieService {
     return this.db.corpusDocs.toArray();
   }
 
+  async deleteCorpusDoc(driveFileId: string): Promise<void> {
+    await this.db.corpusDocs.delete(driveFileId);
+  }
+
   // ---------- Corpus config (singleton) ----------
 
   async saveCorpusConfig(cfg: CorpusConfig): Promise<void> {
