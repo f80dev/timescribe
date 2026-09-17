@@ -129,3 +129,29 @@ ADR (Architecture Decision Records) du projet TimeScribe. Chaque décision suit 
 - ✅ Cohérence avec le scaffolding officiel Angular 22.
 - ⚠️ Les chemins du CDC §2 (arborescence imposée) restent valides mais les noms de fichiers `.component.ts` doivent être renommés mentalement en `.ts`. Les ADR-001..008 qui référencent des fichiers restent valides (les services gardent leurs suffixes).
 - ⚠️ Imports : `from './app.component'` devient `from './app'`.
+
+
+## ADR-011 — Corpus Picker v1 = input ID dossier (pas Google Picker externe)
+
+**Contexte :** Le CDC §F2 / étape 10 mentionne un Google Drive Picker (API externe : `<script src="https://apis.google.com/js/api.js">` + `developerKey` + OAuth flow séparé). Or (1) le Picker nécessite une `developerKey` distincte du `clientId` OAuth, (2) il ajoute une balise script tierce non-CSP-friendly, (3) il est documenté mais rarement nécessaire quand on peut récupérer l'ID dossier depuis l'URL Drive (format `drive.google.com/drive/folders/<ID>`).
+
+**Décision :** v1 utilise un `CorpusPickerComponent` partagé avec un simple champ texte pour saisir l'ID du dossier. La migration vers Google Picker est prévue v2 si le UX devient un point bloquant pour les utilisateurs non-techniques.
+
+**Conséquences :**
+- ✅ Pas de dépendance script tierce, pas de `developerKey` à gérer.
+- ✅ Offline-first respecté (le composant marche même sans réseau).
+- ⚠️ UX : l'utilisateur doit copier-coller l'ID depuis l'URL Drive. Acceptable v1 car le CDC vise un public early-adopter.
+- ⚠️ Extraction PDF/Docs natifs non implémentée en v1 (placeholder `[unsupported:mime]`) — à brancher avec `pdfjs-dist` dans une itération ultérieure, possiblement couplée à la migration Picker.
+
+
+## ADR-012 — Troncature du corpus par suppression de docs entiers
+
+**Contexte :** Quand le corpus indexé dépasse `corpusMaxChars` (défaut 100 000), comment borner ? Trois options : (a) tronquer le texte de chaque doc proportionnellement, (b) supprimer les docs les plus longs d'abord, (c) prioriser par `modifiedTime` (le plus récent gagne).
+
+**Décision :** Option (b) — on supprime entièrement les docs les plus longs jusqu'à passer sous le budget. Préféré à (a) parce que tronquer un doc au milieu d'une phrase pollue le LLM ; préférable à (c) parce que ça suppose une politique de rétention non négociée.
+
+**Conséquences :**
+- ✅ Simplicité, déterministe.
+- ⚠️ Le compteur `totalDocs` reflète l'état après troncature (peut être inférieur au nombre de fichiers du dossier Drive). Documenté dans le tooltip UI.
+
+---
