@@ -29,6 +29,19 @@ export interface GoogleAuthConfig {
 export interface GapiClient {
   setToken(token: { access_token: string } | null): void;
   init(config: { discoveryDocs?: string[]; scope?: string }): Promise<void>;
+  tasks: GapiTasksNamespace;
+}
+
+export interface GapiTasksNamespace {
+  tasklists: {
+    list(params: Record<string, unknown>): Promise<{ result: { items?: unknown[] } }>;
+  };
+  tasks: {
+    list(params: { tasklist: string }): Promise<{ result: { items?: unknown[] } }>;
+    insert(params: { tasklist: string; resource: unknown }): Promise<{ result: unknown }>;
+    patch(params: { tasklist: string; task: string; resource: unknown }): Promise<{ result: unknown }>;
+    delete(params: { tasklist: string; task: string }): Promise<unknown>;
+  };
 }
 
 export interface Gapi {
