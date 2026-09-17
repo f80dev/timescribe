@@ -40,6 +40,7 @@ class FakeDexie {
   getEstimate = vi.fn(async (id: string) => this.estimates.get(id));
   local = new Map<string, GoogleTask>();
   countManualEstimates = vi.fn(async () => 0);
+  getSettings = vi.fn(async () => DEFAULT_SETTINGS);
 }
 
 class FakeEstimator {
@@ -51,7 +52,8 @@ class FakeCorpus {
 }
 
 class FakeAuth {
-  getAccessToken = vi.fn(() => 'fake-token');
+  token = 'fake-token';
+  accessToken = () => this.token;
 }
 
 describe('Dashboard', () => {

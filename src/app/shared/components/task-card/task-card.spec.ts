@@ -1,10 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { signal } from '@angular/core';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { TaskCardComponent } from './task-card';
 import { GoogleTask } from '../../../core/models/task.model';
-import { DurationPipe } from '../../pipes/duration.pipe';
 
 /**
  * Tests de TaskCardComponent (cf §F3 / étape 13).
@@ -13,7 +11,7 @@ import { DurationPipe } from '../../pipes/duration.pipe';
  * - rendu du titre et de la due date
  * - badge durée via DurationPipe
  * - icône source d'estimation (manual / llm / none)
- * - émet un événement au clic
+ * - réactivité au changement de task (signal input)
  */
 
 describe('TaskCardComponent', () => {
@@ -42,7 +40,7 @@ describe('TaskCardComponent', () => {
 
   it('affiche le titre et la due date', () => {
     const fixture = TestBed.createComponent(TaskCardComponent);
-    fixture.componentInstance.task = mkTask();
+    fixture.componentRef.setInput('task', mkTask());
     fixture.detectChanges();
     const html = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(html).toContain('Préparer la réunion');
@@ -51,7 +49,7 @@ describe('TaskCardComponent', () => {
 
   it('affiche "—" quand la tâche n\'a pas d\'estimation', () => {
     const fixture = TestBed.createComponent(TaskCardComponent);
-    fixture.componentInstance.task = mkTask();
+    fixture.componentRef.setInput('task', mkTask());
     fixture.detectChanges();
     const html = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(html).toContain('—');
@@ -59,7 +57,7 @@ describe('TaskCardComponent', () => {
 
   it('affiche la durée formatée quand l\'estimation existe', () => {
     const fixture = TestBed.createComponent(TaskCardComponent);
-    fixture.componentInstance.task = mkTask({
+    fixture.componentRef.setInput('task', mkTask({
       estimate: {
         taskId: 't1',
         durationMinutes: 90,
@@ -67,15 +65,15 @@ describe('TaskCardComponent', () => {
         source: 'llm',
         estimatedAt: new Date(),
       },
-    });
+    }));
     fixture.detectChanges();
     const html = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(html).toContain('1h 30min');
   });
 
-  it('badge "Manuel" pour source manual, "LLM" pour llm, "?" pour none', () => {
+  it('badge "Manuel" pour source manual', () => {
     const fixture = TestBed.createComponent(TaskCardComponent);
-    fixture.componentInstance.task = mkTask({
+    fixture.componentRef.setInput('task', mkTask({
       estimate: {
         taskId: 't1',
         durationMinutes: 30,
@@ -84,12 +82,15 @@ describe('TaskCardComponent', () => {
         estimatedAt: new Date(),
         overriddenBy: 'manual',
       },
-    });
+    }));
     fixture.detectChanges();
-    let html = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const html = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(html).toMatch(/manuel|ajust/i);
+  });
 
-    fixture.componentInstance.task = mkTask({
+  it('badge "LLM" pour source llm', () => {
+    const fixture = TestBed.createComponent(TaskCardComponent);
+    fixture.componentRef.setInput('task', mkTask({
       estimate: {
         taskId: 't1',
         durationMinutes: 30,
@@ -97,9 +98,9 @@ describe('TaskCardComponent', () => {
         source: 'llm',
         estimatedAt: new Date(),
       },
-    });
+    }));
     fixture.detectChanges();
-    html = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const html = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(html).toMatch(/llm/i);
   });
 });

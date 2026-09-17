@@ -1,0 +1,69 @@
+<section class="dashboard">
+  <header class="dashboard-header">
+    <h1>Tâches</h1>
+
+    <mat-form-field appearance="outline" class="filter">
+      <mat-label>Statut</mat-label>
+      <mat-select
+        [ngModel]="filter()"
+        (ngModelChange)="setFilter($event)"
+        aria-label="Filtrer par statut"
+      >
+        <mat-option value="needsAction">À faire</mat-option>
+        <mat-option value="completed">Terminées</mat-option>
+        <mat-option value="all">Toutes</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    @if (!isFabVisible()) {
+      <button
+        mat="filled"
+        color="primary"
+        class="reeval-desktop"
+        (click)="onReevaluateClick()"
+        [disabled]="reevaluating() || tasksNeedingEstimate().length === 0"
+      >
+        <mat-icon>auto_awesome</mat-icon>
+        <span>Tout réévaluer</span>
+      </button>
+    }
+  </header>
+
+  @if (loading()) {
+    <p class="status">
+      <mat-spinner diameter="20" />
+      <span>Chargement des tâches…</span>
+    </p>
+  } @else if (filteredTasks().length === 0) {
+    <p class="empty">
+      Aucune tâche à afficher. Connectez-vous à Google Tasks et ajoutez-en.
+    </p>
+  } @else {
+    <div class="task-grid" role="list">
+      @for (t of filteredTasks(); track t.id) {
+        <div role="listitem" class="task-grid-item">
+          <app-task-card [task]="t" />
+        </div>
+      }
+    </div>
+  }
+
+  @if (reevaluating()) {
+    <p class="status reeval" role="status">
+      <mat-spinner diameter="20" />
+      <span>Réévaluation en cours ({{ tasksNeedingEstimate().length }} tâches)…</span>
+    </p>
+  }
+
+  @if (isFabVisible() && tasksNeedingEstimate().length > 0 && !reevaluating()) {
+    <button
+      mat-fab
+      color="primary"
+      class="reeval-fab"
+      (click)="onReevaluateClick()"
+      aria-label="Tout réévaluer"
+    >
+      <mat-icon>auto_awesome</mat-icon>
+    </button>
+  }
+</section>

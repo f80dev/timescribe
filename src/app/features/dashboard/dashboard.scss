@@ -1,0 +1,84 @@
+.dashboard {
+  position: relative;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+  padding-bottom: 96px; // place pour le FAB mobile
+}
+
+.dashboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    flex: 1 0 100%;
+  }
+
+  .filter {
+    flex: 1 1 200px;
+  }
+  .reeval-desktop {
+    align-self: center;
+  }
+
+  @media (min-width: 768px) {
+    h1 {
+      flex: 1 1 auto;
+    }
+    .filter {
+      flex: 0 1 200px;
+    }
+  }
+}
+
+.task-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr; // mobile : 1 colonne
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); // tablet : 2 colonnes
+  }
+  @media (min-width: 960px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); // desktop : 3 colonnes
+  }
+}
+
+.task-grid-item {
+  display: block;
+  min-width: 0; // autorise le shrink dans la grille
+}
+
+.status,
+.empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--mat-sys-on-surface-variant, #666);
+  margin: 0;
+}
+.empty {
+  font-style: italic;
+}
+.reeval {
+  position: sticky;
+  bottom: 16px;
+  align-self: center;
+  background: var(--mat-sys-surface-container, #fff);
+  padding: 8px 16px;
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.reeval-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 80px; // au-dessus du bottom-nav mobile (56px + marges)
+  z-index: 10;
+}
