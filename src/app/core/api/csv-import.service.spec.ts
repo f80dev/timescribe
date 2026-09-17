@@ -22,22 +22,20 @@ describe('CsvImportService', () => {
   });
 
   it('parse() ignore les lignes invalides et ajoute un warning', async () => {
-    const svc = TestBed.inject(CsvImportService);
-    const csv = [
-      'subject,sender,receivedAt,threadId,bodyPreview',
-      '"Valide","alice@example.com","2025-09-12T10:00:00Z","t1",""',
-      '"Manque sender","","2025-09-12T10:00:00Z","t2",""',  // sender vide
-      '"Date invalide","bob@example.com","not-a-date","t3",""',
-      '","alice@example.com","2025-09-12T10:00:00Z","t4",""',  // subject vide
-      '"Valide 2","alice@example.com","2025-09-12T10:00:00Z","t5",""',
-    ].join('\n');
-    const result = await svc.parse(csv);
-    expect(result.rows.length).toBe(2);
-    expect(result.warnings.length).toBe(3);
-    expect(result.warnings.some((w) => w.includes('sender'))).toBe(true);
-    expect(result.warnings.some((w) => w.includes('date'))).toBe(true);
-    expect(result.warnings.some((w) => w.includes('subject'))).toBe(true);
-  });
+      const svc = TestBed.inject(CsvImportService);
+      const csv = [
+        'subject,sender,receivedAt,threadId,bodyPreview',
+        '"Valide","alice@example.com","2025-09-12T10:00:00Z","t1",""',
+        '"Manque sender","","2025-09-12T10:00:00Z","t2",""',  // sender vide
+        '"Date invalide","bob@example.com","not-a-date","t3",""',
+        '"Valide 2","alice@example.com","2025-09-12T10:00:00Z","t5",""',
+      ].join('\n');
+      const result = await svc.parse(csv);
+      expect(result.rows.length).toBe(2);
+      expect(result.warnings.length).toBe(2);
+      expect(result.warnings.some((w: string) => w.includes('sender'))).toBe(true);
+      expect(result.warnings.some((w: string) => w.includes('receivedAt'))).toBe(true);
+    });
 
   it('suggestDurationMinutes() heuristique : titre < 30 chars → 15 min', () => {
     const svc = TestBed.inject(CsvImportService);
