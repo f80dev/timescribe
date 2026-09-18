@@ -1,0 +1,152 @@
+<section class="settings-page">
+  <header>
+    <h1>Paramètres</h1>
+    <p class="subtitle">
+      Configurez le provider LLM, les seuils d'estimation et l'apparence.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="status"><mat-spinner diameter="20" /> Chargement…</p>
+  }
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>LLM</mat-card-title>
+      <mat-card-subtitle>Provider et paramètres d'estimation</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Base URL</mat-label>
+        <input
+          matInput
+          type="url"
+          [ngModel]="settings().llmBaseUrl"
+          (ngModelChange)="updateField('llmBaseUrl', $event)"
+          aria-label="LLM base URL"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Seuil minimum de tâches évaluées (fallback manuel)</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          max="50"
+          [ngModel]="settings().manualFallbackThreshold"
+          (ngModelChange)="updateField('manualFallbackThreshold', +$event)"
+          aria-label="Seuil minimum"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Budget corpus (caractères)</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1000"
+          step="1000"
+          [ngModel]="settings().corpusMaxChars"
+          (ngModelChange)="updateField('corpusMaxChars', +$event)"
+          aria-label="Budget corpus"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Tâches historiques max envoyées au LLM</mat-label>
+        <input
+          matInput
+          type="number"
+          min="5"
+          max="200"
+          [ngModel]="settings().historicalMaxTasks"
+          (ngModelChange)="updateField('historicalMaxTasks', +$event)"
+          aria-label="Historique max"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half">
+        <mat-label>Température</mat-label>
+        <input
+          matInput
+          type="number"
+          min="0"
+          max="1"
+          step="0.05"
+          [ngModel]="settings().temperature"
+          (ngModelChange)="updateField('temperature', +$event)"
+          aria-label="Température"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half">
+        <mat-label>Max tokens</mat-label>
+        <input
+          matInput
+          type="number"
+          min="256"
+          max="4096"
+          step="64"
+          [ngModel]="settings().maxCompletionTokens"
+          (ngModelChange)="updateField('maxCompletionTokens', +$event)"
+          aria-label="Max tokens"
+        />
+      </mat-form-field>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Apparence</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Thème</mat-label>
+        <mat-select
+          [ngModel]="settings().theme"
+          (ngModelChange)="updateField('theme', $event)"
+          aria-label="Thème"
+        >
+          <mat-option value="light">Clair</mat-option>
+          <mat-option value="dark">Sombre</mat-option>
+          <mat-option value="system">Système</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-divider />
+
+  <div class="actions">
+    @if (saved()) {
+      <span class="saved-hint" role="status">
+        <mat-icon>check_circle</mat-icon>
+        Enregistré
+      </span>
+    }
+    <button
+      mat="filled"
+      color="primary"
+      (click)="save()"
+      [disabled]="saving()"
+    >
+      @if (saving()) {
+        <mat-spinner diameter="20" />
+        <span>Enregistrement…</span>
+      } @else {
+        <mat-icon>save</mat-icon>
+        <span>Enregistrer</span>
+      }
+    </button>
+  </div>
+
+  <p class="note">
+    <strong>Note v1 :</strong> la clé API MiniMax n'est pas encore chiffrée dans cette
+    version. Le chiffrement AES-GCM/PBKDF2 est planifié (ADR-001).
+  </p>
+</section>
