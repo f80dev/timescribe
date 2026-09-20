@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs on the same branch (saves CI minutes)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Lint + Build + Test (Node 22)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22.22.3
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Lint (tsc strict, no emit)
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Build (production)
+        run: npm run build
+
+      - name: Test (with coverage)
+        run: npx ng test --coverage --watch=false
+
+      - name: Upload coverage report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
+      - name: Verify deploy artifacts
+        if: success()
+        run: |
+          test -f dist/timescribe/browser/_redirects || (echo "ERR: _redirects missing" && exit 1)
+          test -f dist/timescribe/browser/ngsw-worker.js || (echo "ERR: ngsw-worker.js missing" && exit 1)
+          test -f dist/timescribe/browser/manifest.webmanifest || (echo "ERR: manifest missing" && exit 1)
+          test -f dist/timescribe/browser/ngsw.json || (echo "ERR: ngsw.json missing" && exit 1)
+          echo "All PWA artifacts present."
+
+  lighthouse:
+    name: Lighthouse CI (optional, advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Run only on main, after build-test passes
+    needs: build-test
+    if: github.ref == 'refs/heads/main'
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22.22.3
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: 'npm'
+
+      - name: Install + build
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
+
+      - name: Run Lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: .lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
