@@ -41,3 +41,7 @@ Thumbs.db
 # PWA / Service worker dev artifacts
 /ngsw/
 /ngsw.json
+
+# Wrangler / Cloudflare local dev
+.wrangler/
+.dev.vars
