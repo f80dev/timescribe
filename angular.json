@@ -60,16 +60,38 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "timescribe-tmp:build:production"
+              "buildTarget": "timescribe:build:production"
             },
             "development": {
-              "buildTarget": "timescribe-tmp:build:development"
+              "buildTarget": "timescribe:build:development"
             }
           },
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "coverage": true,
+            "coverageInclude": [
+              "src/app/core/**/*.ts",
+              "src/app/features/**/*.ts",
+              "src/app/shared/**/*.ts"
+            ],
+            "coverageExclude": [
+              "src/app/**/*.spec.ts",
+              "src/app/**/*.d.ts",
+              "src/app/**/index.ts",
+              "src/app/core/models/**"
+            ],
+            "coverageReporters": ["text-summary", "html"],
+            "coverageThresholds": {
+              "statements": 70,
+              "branches": 60,
+              "functions": 70,
+              "lines": 70,
+              "perFile": false
+            }
+          }
         }
       }
     }
