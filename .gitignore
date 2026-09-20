@@ -45,3 +45,11 @@ Thumbs.db
 # Wrangler / Cloudflare local dev
 .wrangler/
 .dev.vars
+
+# Yarn 4 (Berry) artifacts
+.yarn/cache
+.yarn/install-state.gz
+.yarn/build-state.yml
+.yarn/unplugged
+.pnp.*
+# yarn.lock IS committed (unlike package-lock.json)

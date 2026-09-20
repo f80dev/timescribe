@@ -155,3 +155,20 @@ ADR (Architecture Decision Records) du projet TimeScribe. Chaque décision suit 
 - ⚠️ Le compteur `totalDocs` reflète l'état après troncature (peut être inférieur au nombre de fichiers du dossier Drive). Documenté dans le tooltip UI.
 
 ---
+## ADR-013 — Yarn 4 (Berry) comme gestionnaire de paquets unique
+
+**Contexte :** Le projet est né avec npm + `--legacy-peer-deps` (contournement du bug npm 10.9.x sur la peer dep `canvas`). Après le scaffolding initial, plusieurs sessions ont vu ce flag revenir régulièrement et des divergences entre `package.json` et `package-lock.json` apparaître. En septembre 2026, Yarn 4 (Berry) est mature, supporté par Corepack (intégré à Node 22), et offre :
+- Un lockfile v8 plus rapide à parser
+- `nodeLinker: node-modules` qui préserve le layout standard `node_modules/` (compatibilité Angular CLI / esbuild / Vitest sans config)
+- `--immutable` qui refuse un `yarn.lock` désynchronisé (sécurité CI)
+- Téléchargement automatique via `packageManager: yarn@4.5.3` dans `package.json` (pas de `npm install -g yarn` à faire)
+
+**Décision :** Yarn 4 (Berry) via Corepack devient le gestionnaire officiel. `package-lock.json` est supprimé. npm n'est plus supporté en standard (réinstallé = migration vers Yarn). La CI GitHub Actions bascule sur `corepack enable && yarn install --immutable`.
+
+**Conséquences :**
+- ✅ Plus de `--legacy-peer-deps` (Yarn 4 gère mieux les peer deps par défaut).
+- ✅ `yarn install --immutable` en CI attrape les `yarn.lock` désynchronisés.
+- ✅ Pas d'installation Yarn globale : Corepack lit `packageManager` du `package.json`.
+- ⚠️ Tous les collaborateurs doivent avoir Corepack activé (`corepack enable` une fois).
+- ⚠️ Si tu clones sur un disque où un autre projet parent a un `yarn.lock` (ex: `~/psy-site/yarn.lock`), Yarn 4 peut interpréter `timescribe` comme un workspace — contourné par la présence d'un `yarn.lock` à la racine du projet (`touch yarn.lock` avant le premier `yarn install` dans ce cas).
+- ⚠️ Cette décision est **irréversible en pratique** : revenir à npm forcerait à régénérer un `package-lock.json` et à perdre le bénéfice du lockfile v8.

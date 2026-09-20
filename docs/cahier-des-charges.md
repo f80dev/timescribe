@@ -177,6 +177,7 @@ Pour **chaque feature** ajoutée au plan §8 (étapes 5 à 17), l'agent suit ce 
 | Angular Material | 22.x | Demandé |
 | TypeScript | 5.6.x | Compatible Angular 22 |
 | RxJS | 7.8.x | Standard Angular |
+| **Gestionnaire de paquets** | **Yarn 4 (Berry)** | Via Corepack. `packageManager: yarn@4.5.3` dans `package.json`. `nodeLinker: node-modules` pour compatibilité Angular CLI. **`npm` n'est plus supporté en standard** — `package-lock.json` supprimé. |
 | Dexie | 4.x | Persistance locale IndexedDB |
 | Google Identity Services | latest stable | OAuth explicite (cf §5.1) |
 | `googleapis` (gapi) | latest stable via `@types/gapi` | API REST Google côté client |
@@ -184,8 +185,8 @@ Pour **chaque feature** ajoutée au plan §8 (étapes 5 à 17), l'agent suit ce 
 | MiniMax M3 (LLM d'estimation) | API `https://api.minimax.io/v1` | Modèle d'estimation de charge via API OpenAI-compatible (cf §5.4). |
 | date-fns | 3.x | Manipulation durées |
 | papaparse | 5.x | Parsing CSV Gmail export |
-| Karma + Jasmine | latest Angular | Tests unitaires |
-| Karma ChromeHeadless (NoSandbox) | latest | Tests headless CI / container |
+| Karma + Jasmine | ~~annulé~~ | Tests unitaires → **Vitest 4 via `@angular/build:unit-test`** (cf ADR-009) |
+| Karma ChromeHeadless (NoSandbox) | ~~annulé~~ | Remplacé par Vitest en mode headless via jsdom |
 | Vite (via Angular CLI 22) | intégré | Build |
 | `@angular/service-worker` | 22.x | PWA — cache offline, installable, support smartphone |
 | `@angular/material` Mobile CDK | 22.x | Bottom sheet, swipe gestures |

@@ -16,9 +16,13 @@ permissions:
 
 jobs:
   build-test:
-    name: Lint + Build + Test (Node 22)
+    name: Lint + Build + Test (Node 22, Yarn 4)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    env:
+      # Use Corepack-managed Yarn 4 (matches package.json packageManager field)
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
 
     steps:
       - name: Checkout
@@ -28,19 +32,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.22.3
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies (Yarn 4)
+        # Yarn 4 reads packageManager from package.json automatically
+        run: yarn install --immutable
 
       - name: Lint (tsc strict, no emit)
-        run: npx tsc --noEmit -p tsconfig.app.json
+        run: yarn tsc --noEmit -p tsconfig.app.json
 
       - name: Build (production)
-        run: npm run build
+        run: yarn build
 
       - name: Test (with coverage)
-        run: npx ng test --coverage --watch=false
+        run: yarn ng test --coverage --watch=false
 
       - name: Upload coverage report
         if: success()
@@ -68,6 +75,9 @@ jobs:
     if: github.ref == 'refs/heads/main'
     continue-on-error: true
 
+    env:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,12 +86,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.22.3
-          cache: 'npm'
 
-      - name: Install + build
+      - name: Enable Corepack + install + build
         run: |
-          npm install --legacy-peer-deps
-          npm run build
+          corepack enable
+          yarn install --immutable
+          yarn build
 
       - name: Run Lighthouse
         uses: treosh/lighthouse-ci-action@v12
