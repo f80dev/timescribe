@@ -51,6 +51,21 @@ export class GoogleAuthService {
     if (typeof window === 'undefined') {
       throw new Error('GoogleAuthService requires a browser environment');
     }
+
+    // --- DIAGNOSTIC TEMPORAIRE ------------------------------------------
+    diag('état initial', {
+      hasGoogle: typeof window.google,
+      hasGoogleAccounts: typeof window.google?.accounts,
+      hasGoogleOauth2: typeof window.google?.accounts?.oauth2,
+      hasGapi: typeof window.gapi,
+      hasGapiClient: typeof window.gapi?.client,
+      clientId: this.clientId || '(VIDE — init() jamais appelé ?)',
+      online: navigator.onLine,
+      origin: location.origin,
+      swController: !!navigator.serviceWorker?.controller,
+    });
+    // -------------------------------------------------------------------
+
     // Si le SDK n'est pas chargé, on injecte le script à la volée.
     if (!window.google) {
       await loadGisScript();
@@ -59,6 +74,17 @@ export class GoogleAuthService {
       await loadGapiScript();
     }
     if (!window.gapi || !window.google) {
+      // --- DIAGNOSTIC TEMPORAIRE ----------------------------------------
+      diag('ÉCHEC — état après injection', {
+        hasGoogle: typeof window.google,
+        hasGapi: typeof window.gapi,
+        scriptsInDom: Array.from(document.querySelectorAll('script[id]')).map((s) => ({
+          id: s.id,
+          src: (s as HTMLScriptElement).src,
+        })),
+      });
+      await probeSdkReachability();
+      // -----------------------------------------------------------------
       throw new Error('Google SDK failed to load');
     }
     this.gapiClient = window.gapi;
@@ -143,34 +169,85 @@ export type AuthEvent =
 
 const GIS_SCRIPT_ID = 'google-identity-services';
 const GAPI_SCRIPT_ID = 'google-apis';
+const GIS_SRC = 'https://accounts.google.com/gsi/client';
+const GAPI_SRC = 'https://apis.google.com/js/api.js';
+
+// --- DIAGNOSTIC TEMPORAIRE : à retirer une fois la cause identifiée --------
+function diag(step: string, payload: Record<string, unknown>): void {
+  // eslint-disable-next-line no-console
+  console.warn(`%c[google-auth][DIAG] ${step}`, 'color:#e65100;font-weight:bold', payload);
+}
+
+/** Tente de joindre les URLs des SDK et rapporte l'échec réel. */
+async function probeSdkReachability(): Promise<void> {
+  for (const src of [GIS_SRC, GAPI_SRC]) {
+    const started = performance.now();
+    try {
+      const res = await fetch(src, { mode: 'no-cors', cache: 'no-store' });
+      diag('probe OK', { src, type: res.type, status: res.status, ms: Math.round(performance.now() - started) });
+    } catch (e) {
+      diag('probe ÉCHEC (réseau/CSP/bloqueur)', {
+        src,
+        ms: Math.round(performance.now() - started),
+        error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+      });
+    }
+  }
+  diag('CSP / contexte', {
+    cspMeta: document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute('content') ?? '(aucune meta CSP)',
+    userAgent: navigator.userAgent,
+  });
+}
+// ---------------------------------------------------------------------------
 
 function loadGisScript(): Promise<void> {
-  return loadScript(
-    GIS_SCRIPT_ID,
-    'https://accounts.google.com/gsi/client',
-  );
+  return loadScript(GIS_SCRIPT_ID, GIS_SRC);
 }
 
 function loadGapiScript(): Promise<void> {
-  return loadScript(
-    GAPI_SCRIPT_ID,
-    'https://apis.google.com/js/api.js',
-  );
+  return loadScript(GAPI_SCRIPT_ID, GAPI_SRC);
 }
 
 function loadScript(id: string, src: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (document.getElementById(id)) {
+    const existing = document.getElementById(id);
+    if (existing) {
+      // --- DIAGNOSTIC TEMPORAIRE ----------------------------------------
+      diag('script DÉJÀ présent → resolve() SANS recharger', {
+        id,
+        src: (existing as HTMLScriptElement).src,
+        etatGlobalAssocie: {
+          google: typeof window.google,
+          gapi: typeof window.gapi,
+        },
+        // Le global correspondant est-il réellement défini ?
+        globalManquant: id === GIS_SCRIPT_ID ? !window.google : !window.gapi,
+      });
+      // ------------------------------------------------------------------
       resolve();
       return;
     }
+    diag('injection script', { id, src });
     const script = document.createElement('script');
     script.id = id;
     script.src = src;
     script.async = true;
     script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+    script.onload = () => {
+      diag('onload', {
+        id,
+        src,
+        // Si onload fire mais que le global est absent → script exécuté à vide
+        // (bloqué par extension, réponse vide, ou serviceworker qui sert du cache).
+        google: typeof window.google,
+        gapi: typeof window.gapi,
+      });
+      resolve();
+    };
+    script.onerror = (ev) => {
+      diag('onerror', { id, src, ev: String(ev) });
+      reject(new Error(`Failed to load script: ${src}`));
+    };
     document.head.appendChild(script);
   });
 }
