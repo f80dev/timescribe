@@ -270,7 +270,7 @@ describe('GoogleAuthService — chargement des SDK distants', () => {
     await expect(svc.ensureSdksLoaded()).rejects.toThrow();
 
     await expect(svc.ensureSdksLoaded()).resolves.toBeUndefined();
-    expect(countSdkInjections()).toBe(4); // GIS+gapi (vides) puis GIS+gapi (succès)
+    expect(countSdkInjections()).toBe(3); // GIS (exécuté à vide, rejeté) + GIS + gapi (succès)
   });
 
   it('ne recharge pas les SDK déjà chargés (idempotence)', async () => {
