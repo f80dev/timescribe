@@ -183,3 +183,109 @@ describe('GoogleAuthService', () => {
     expect(svc.isAuthenticated()).toBe(true);
   });
 });
+
+/**
+ * Cas de charge des SDK distants (GIS + gapi) — bug « Google SDK failed to load ».
+ *
+ * Un `<script>` laissé dans le DOM après un échec (`onerror`) ou un `onload` sans
+ * global (bloqué par extension / réponse vide) ne doit PAS faire court-circuiter
+ * les tentatives suivantes : il faut réellement réinjecter le script.
+ */
+describe('GoogleAuthService — chargement des SDK distants', () => {
+  type Behavior = 'error' | 'success' | 'silent';
+
+  /** Simule le chargement des <script> SDK injectés dans document.head. */
+  function mockScriptLoading(behaviors: Behavior[]): void {
+    let injections = 0;
+    const realAppend = document.head.appendChild.bind(document.head);
+    vi.spyOn(document.head, 'appendChild').mockImplementation((node: any) => {
+      const isSdkScript =
+        node instanceof HTMLScriptElement &&
+        (node.src.includes('accounts.google.com') || node.src.includes('apis.google.com'));
+      if (!isSdkScript) {
+        return realAppend(node);
+      }
+      // L'élément est RÉELLEMENT ajouté : il reste en DOM après un échec (comme en prod).
+      const result = realAppend(node);
+      const behavior = behaviors[injections] ?? 'error';
+      injections++;
+      queueMicrotask(() => {
+        if (behavior === 'error') {
+          node.onerror?.(new Event('error'));
+          return;
+        }
+        if (behavior === 'success') {
+          const globalName = node.src.includes('accounts.google.com') ? 'google' : 'gapi';
+          (window as any)[globalName] = (window as any)[globalName] ?? {};
+        }
+        // 'silent' : onload SANS définir le global (script exécuté à vide)
+        node.onload?.(new Event('load'));
+      });
+      return result;
+    });
+  }
+
+  function countSdkInjections(): number {
+    const calls = (document.head.appendChild as any).mock?.calls ?? [];
+    return calls.filter(
+      (c: any[]) =>
+        c[0] instanceof HTMLScriptElement &&
+        (c[0].src.includes('accounts.google.com') || c[0].src.includes('apis.google.com')),
+    ).length;
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    document.getElementById('google-identity-services')?.remove();
+    document.getElementById('google-apis')?.remove();
+    delete (window as any).gapi;
+    delete (window as any).google;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    document.getElementById('google-identity-services')?.remove();
+    document.getElementById('google-apis')?.remove();
+    delete (window as any).gapi;
+    delete (window as any).google;
+  });
+
+  it('réessaie réellement après un échec de chargement (élément stale en DOM)', async () => {
+    // 1ʳᵉ tentative : GIS échoue en réseau. 2ᵉ tentative : tout charge normalement.
+    mockScriptLoading(['error', 'success', 'success']);
+    const svc = TestBed.inject(GoogleAuthService);
+
+    await expect(svc.ensureSdksLoaded()).rejects.toThrow('Failed to load script');
+
+    // La 2ᵉ tentative doit RÉINJECTER les scripts (pas de court-circuit sur l'élément stale)
+    await expect(svc.ensureSdksLoaded()).resolves.toBeUndefined();
+    expect(countSdkInjections()).toBe(3); // 1 (échec) + GIS + gapi (succès)
+  });
+
+  it('un onload sans global (script exécuté à vide) rejette et permet un retry', async () => {
+    // 1ʳᵉ tentative : les scripts « se chargent » mais aucun global n'apparaît.
+    mockScriptLoading(['silent', 'success', 'success']);
+    const svc = TestBed.inject(GoogleAuthService);
+
+    await expect(svc.ensureSdksLoaded()).rejects.toThrow();
+
+    await expect(svc.ensureSdksLoaded()).resolves.toBeUndefined();
+    expect(countSdkInjections()).toBe(4); // GIS+gapi (vides) puis GIS+gapi (succès)
+  });
+
+  it('ne recharge pas les SDK déjà chargés (idempotence)', async () => {
+    const gis = document.createElement('script');
+    gis.id = 'google-identity-services';
+    document.head.appendChild(gis);
+    const gapi = document.createElement('script');
+    gapi.id = 'google-apis';
+    document.head.appendChild(gapi);
+    (window as any).google = {};
+    (window as any).gapi = {};
+
+    mockScriptLoading([]);
+    const svc = TestBed.inject(GoogleAuthService);
+    await expect(svc.ensureSdksLoaded()).resolves.toBeUndefined();
+    expect(countSdkInjections()).toBe(0);
+  });
+});
