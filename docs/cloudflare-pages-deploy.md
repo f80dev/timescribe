@@ -18,10 +18,10 @@ Hébergement : **Cloudflare Pages** (cf. ADR-008).
 2. Sélectionner le repo `f80dev/timescribe`, branche `main`
 3. **Build settings** :
    - Framework preset : **None** (Angular n'est pas listé)
-   - Build command : `npm install --legacy-peer-deps && npm run build`
+   - Build command : `corepack enable && yarn install --immutable && yarn run build` (ADR-013 : Yarn 4, npm n'est plus supporté)
    - Build output directory : `dist/timescribe/browser`
    - Root directory : *(vide)*
-   - Node version : `22` (Cloudflare prend 22.x par défaut)
+   - Node version : `22` (Cloudflare prend 22.x par défaut — le `packageManager` du `package.json` fait foi pour Yarn 4)
 4. **Environment variables** (Production + Preview) :
    - Aucune obligatoire pour le moment. Les éventuelles clés (Minimax M3, OAuth client id) seront injectées au moment de l'implémentation de l'étape 11 (déjà faite → placeholder API non testé, voir §5.4 du CDC).
 5. **Save and Deploy** → attendre ~3-5 min pour le premier build
@@ -52,7 +52,9 @@ Définis dans `wrangler.toml`. Cloudflare Pages applique ces headers automatique
 
 ```bash
 export PATH=/home/hhoareau/.local/node-v22.22.3-linux-x64/bin:$PATH
-npm run build
+corepack enable
+yarn install --immutable
+yarn run build
 wrangler pages dev dist/timescribe/browser
 # Ouvre http://localhost:8788
 ```

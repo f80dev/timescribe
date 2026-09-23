@@ -2,16 +2,15 @@ name = "timescribe"
 compatibility_date = "2026-09-20"
 pages_build_output_dir = "./dist/timescribe/browser"
 
-# Build :
-#   npm install --legacy-peer-deps
-#   npm run build
+# Build (ADR-013 : Yarn 4 via Corepack, npm n'est plus supporté) :
+#   corepack enable && yarn install --immutable && yarn run build
 # Output : dist/timescribe/browser (Angular 22 + @angular/build:application)
 
 # SPA fallback : le fichier public/_redirects gère le routing.
 # Headers de sécurité de base (statiques via Cloudflare).
 
 [build]
-command = "npm install --legacy-peer-deps && npm run build"
+command = "corepack enable && yarn install --immutable && yarn run build"
 
 [[headers]]
   for = "/*"
